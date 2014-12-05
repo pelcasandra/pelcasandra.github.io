@@ -1,0 +1,43 @@
+@font-face {
+  font-family: "GaramondPremrProIt";
+  src: url(../fonts/GaramondPremrPro-ItDisp.eot);
+  src: url(../fonts/GaramondPremrPro-ItDisp.eot?#iefix) format("embedded-opentype"), url(../fonts/GaramondPremrPro-ItDisp.woff) format("woff"), url(../fonts/GaramondPremrPro-ItDisp.ttf) format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "NeuzeitSLTStdBookHeavy";
+  src: url(../fonts/neuzeitsltstd-bookheavy.eot);
+  src: url(../fonts/neuzeitsltstd-bookheavy.eot?#iefix) format("embedded-opentype"), url(../fonts/neuzeitsltstd-bookheavy.woff) format("woff"), url(../fonts/neuzeitsltstd-bookheavy.ttf) format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+body {
+  text-align: center;
+  font-family: 'GaramondPremrProIt';
+  font-size: 20px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizelegibility;
+}
+
+h1 {
+  font-family: 'NeuzeitSLTStdBookHeavy';
+  text-transform: uppercase;
+  font-size: 20px;
+  font-weight: normal;
+  margin: 70px 0 0;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+ul li {
+  display: inline-block;
+  padding: 30px 15px;
+  vertical-align: middle
+}
