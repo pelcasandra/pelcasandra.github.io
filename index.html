@@ -1,23 +1,27 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <link rel="stylesheet" type="text/css" href="css/base.css" />
-    <meta content='width=device-width, initial-scale=1' name='viewport' />
-    <title>Martin Caetano</title>
-  </head>
-  <body>
-    <h1>Martin Caetano</h1>
-    <p>Startup maker.</p>
-    <p><img src="avatar.jpg" width="350" height="350" /></p>
-    <ul class="social">
-      <li><a href="https://twitter.com/pelcasandra" target="_blank"><img src="images/icon-twitter.svg" width="32"></a></li>
-      <li><a href="https://www.instagram.com/pelcasandra/" target="_blank"><img src="images/icon-instagram.svg" width="30"></a></li>
-      <li><a href="https://www.goodreads.com/user/show/83330451-martin-caetano" target="_blank"><img src="images/icon-goodreads.svg" width="30"></a></li>
-      <li><a href="https://soundcloud.com/pel-casandra/" target="_blank"><img src="images/icon-soundcloud.svg" width="46"></a></li>
-    </ul>
-    <p>Startups</p>
-    <ul class="social">
-      <li><a href="https://www.yorokobi.com" target="_blank"><img src="images/brand-yorokobi.svg" width="50" alt="Yorokobi" title="Yorokobi"></a></li>	    
-    </ul>
-  </body>
-</html>
+---
+layout: main
+title: Martin Caetano
+---
+<div class="main-page">
+  <h1>{{ page.title }}</h1>
+  <p>I like to build things. Interested in web architectures, UX, programming languages and literature.</p>
+  <p><img src="assets/images/avatar.jpg" width="300" height="300" /></p>
+  <ul class="social">
+    <li><a href="https://twitter.com/pelcasandra" target="_blank">Twitter</a></li>
+    <li><a href="https://www.instagram.com/pelcasandra/" target="_blank">Instagram</a></li>
+    <li><a href="https://www.goodreads.com/user/show/83330451-martin-caetano" target="_blank">Books I'm reading</a></li>
+    <li><a href="https://www.imdb.com/user/ur34429840/ratings" target="_blank">Things I watched recently</a></li>
+  </ul>
+  <h5>Recent posts</h4>
+  <ul>
+    {% for post in site.posts %}
+      <li>
+        <a href="{{ post.url }}">{{ post.title }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+  <p>My Startup</p>
+  <ul class="social">
+    <li><a href="https://www.yorokobi.com" target="_blank"><img src="assets/images/brand-yorokobi.svg" width="50" alt="Yorokobi" title="Yorokobi"></a></li>	    
+  </ul>
+</div>

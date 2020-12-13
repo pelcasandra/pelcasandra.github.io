@@ -1,0 +1,25 @@
+---
+title: My First Page
+layout: default
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" type="text/css" href="/assets/css/styles.css" />
+    <meta content='width=device-width, initial-scale=1' name='viewport' />
+    <title>{{ page.title }}</title>
+  </head>
+  <body>
+    <nav>
+      <h3><a href="/">Martin Caetano</a></h3>
+    </nav>
+    <header>
+      <h1>{{ page.title }}</h1>
+    </header>
+    <section>      
+      {{ content }}
+    </section>
+    <footer>
+    </footer>
+  </body>
+</html>
