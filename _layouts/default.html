@@ -8,6 +8,7 @@ layout: default
     <link rel="stylesheet" type="text/css" href="/assets/css/styles.css" />
     <meta content='width=device-width, initial-scale=1' name='viewport' />
     <title>{{ page.title }}</title>
+    {% include head.html %}
   </head>
   <body>
     <nav>
@@ -20,7 +21,6 @@ layout: default
       {{ content }}
     </section>
     <footer>
-      {% include footer.html %}
     </footer>
   </body>
 </html>
