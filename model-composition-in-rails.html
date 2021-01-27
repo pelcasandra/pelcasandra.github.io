@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-EJRMZTW63X"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-EJRMZTW63X');
+</script>
+    <link rel="stylesheet" type="text/css" href="/assets/css/styles.css" />
+    <meta content='width=device-width, initial-scale=1' name='viewport' />
+    <title>Model Composition in Rails</title>
+  </head>
+  <body>
+    <nav>
+      <h3><a href="/">Martin Caetano</a></h3>
+    </nav>
+    <header>
+      <h1>Model Composition in Rails</h1>
+    </header>
+    <section>      
+      <p>I recently came with the need of treating two different models alike so as to be able to query them as one ActiveRelation and also trigger their methods using a unified interface even if they are internally differently from each other.</p>
+
+<p>Let’s say we have <code class="language-html highlighter-rouge">Business</code> and <code class="language-html highlighter-rouge">Person</code> models, each of them has their own database table and I want a way to retrieve all businesses and people in one single query using <em>ActiveRecord</em> and do it consistently returning an <em>ActiveRelation</em> object.</p>
+
+<p>We can reach this by introducing a new model namely <code class="language-html highlighter-rouge">Entity</code> that will take either a business or a person as an <em>entitable</em> polymorphic association.</p>
+
+<h2 id="multi-table-inheritance-with-delegated-type">Multi-table inheritance with delegated type</h2>
+
+<p>I was lucky to find that Rails 6.1 introduced the concept of <a href="https://edgeapi.rubyonrails.org/classes/ActiveRecord/DelegatedType.html">delegated types</a> the same day I needed to do this.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="syntax"><code><span class="k">class</span> <span class="nc">Entity</span>
+  <span class="n">delegated_type</span> <span class="ss">:entitable</span><span class="p">,</span> <span class="ss">types: </span><span class="sx">%w[ Business People ]</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>And on the <code class="language-html highlighter-rouge">Business</code> and <code class="language-html highlighter-rouge">People</code> models you add:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="syntax"><code><span class="k">class</span> <span class="nc">Business</span>
+  <span class="n">included</span> <span class="k">do</span>
+    <span class="n">has_one</span> <span class="ss">:entity</span><span class="p">,</span> <span class="ss">as: :entitable</span><span class="p">,</span> <span class="ss">touch: </span><span class="kp">true</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>Now you can do the following:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="syntax"><code><span class="c1"># Create a business</span>
+<span class="no">Entity</span><span class="p">.</span><span class="nf">create</span> <span class="ss">entitable: </span><span class="no">Business</span><span class="p">.</span><span class="nf">create</span><span class="p">(</span><span class="ss">name: </span><span class="s1">'Acme'</span> <span class="p">)</span>
+
+<span class="c1"># Create a person</span>
+<span class="no">Entity</span><span class="p">.</span><span class="nf">create</span> <span class="ss">entitable: </span><span class="no">Person</span><span class="p">.</span><span class="nf">create</span><span class="p">(</span><span class="ss">name: </span><span class="s1">'Martin'</span> <span class="p">)</span>
+</code></pre></div></div>
+
+<p>And of course you can now retrieve both businesses and people together with <code class="language-html highlighter-rouge">Entity.all</code>. You can even create scopes for doing some filtering.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="syntax"><code><span class="no">Entity</span><span class="p">.</span><span class="nf">all</span><span class="p">.</span><span class="nf">businesses</span>
+<span class="no">Entity</span><span class="p">.</span><span class="nf">all</span><span class="p">.</span><span class="nf">people</span>
+</code></pre></div></div>
+
+<p>This is a nice addiction to Rails. It looks great and it helps maintain the code simple and easier to read.</p>
+
+<h2 id="delegating-methods-gets-messy-quickly">Delegating methods gets messy quickly</h2>
+
+<p>Now, let’s assume that every person has an associated <code class="language-html highlighter-rouge">Identity</code> model that returns their national identification number. We can easily delegate the method <code class="language-html highlighter-rouge">number</code> from  <code class="language-html highlighter-rouge">Person</code> to the <code class="language-html highlighter-rouge">Identity</code> association:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="syntax"><code><span class="k">class</span> <span class="nc">Person</span> 
+  <span class="n">belongs_to</span> <span class="ss">:identity</span>
+
+  <span class="n">delegate</span> <span class="ss">:number</span><span class="p">,</span> <span class="ss">to: :identity</span><span class="p">,</span> <span class="ss">prefix: </span><span class="kp">true</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>We can call <code class="language-html highlighter-rouge">person.identity_number</code> to retrieve the identity number directly from the person object without passing through the identity object, honoring the <a href="https://en.wikipedia.org/wiki/Law_of_Demeter">Law of Demeter</a>.</p>
+
+<p>The <code class="language-html highlighter-rouge">prefix: true</code> prefixes the method as <code class="language-html highlighter-rouge">identity_number</code> instead of <code class="language-html highlighter-rouge">number</code> as it is easier to understand that we’re calling the identity number: we want to avoid  <code class="language-html highlighter-rouge">person.number</code> because people don’t have numbers, they have identification numbers.</p>
+
+<p>Now, let’s assume a business may belong to a person.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="syntax"><code><span class="k">class</span> <span class="nc">Business</span>
+  <span class="n">belongs_to</span> <span class="ss">:person</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>If we know that entities always have an identity either directly from a person or through a business’s owner we want to be able to call the identity from the entity with the same method regardless of the type of type of <em>entitable</em> object.</p>
+
+<p>From an entity we would want to be able do something like:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="syntax"><code><span class="n">entity</span><span class="p">.</span><span class="nf">person_identity_number</span>
+<span class="o">=&gt;</span> <span class="s2">"4WA3X6E21T"</span>
+</code></pre></div></div>
+
+<p>To do this, we can attempt to add delegate method in the <code class="language-html highlighter-rouge">Entity</code> model so <code class="language-html highlighter-rouge">Person</code> and <code class="language-html highlighter-rouge">Business</code> will receive the delegated method <code class="language-html highlighter-rouge">person_identity_number</code> without its prefix as <code class="language-html highlighter-rouge">identity_number</code>. We can try now to re-delegate from the person to the identity and from the business to the person.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="syntax"><code><span class="k">class</span> <span class="nc">Entity</span>
+  <span class="c1"># ...</span>
+
+  <span class="n">delegate</span> <span class="ss">:identity_number</span><span class="p">,</span> <span class="ss">to: :entitable</span><span class="p">,</span> <span class="ss">prefix: :person</span>
+<span class="k">end</span>
+
+<span class="k">class</span> <span class="nc">Person</span>
+  <span class="c1"># ...</span>
+
+  <span class="c1"># Wrong! We already defined :number above.</span>
+  <span class="n">delegate</span> <span class="ss">:identity_number</span><span class="p">,</span> <span class="ss">to: :identity</span> 
+<span class="k">end</span>
+
+<span class="k">class</span> <span class="nc">Business</span>
+  <span class="c1"># ...</span>
+
+  <span class="n">delegate</span> <span class="ss">:identity_number</span><span class="p">,</span> <span class="ss">to: :person</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>However we quickly run into a problem: How to delegate this method down the line?</p>
+
+<p>We are passing a method called <code class="language-html highlighter-rouge">identity_number</code> to <code class="language-html highlighter-rouge">Person</code> when it is already delegating the method as <code class="language-html highlighter-rouge">number</code> with prefix <code class="language-html highlighter-rouge">identity</code> (the prefix is removed when on the Identity model so the method simply becomes <code class="language-html highlighter-rouge">identity.number</code>.</p>
+
+<h2 id="a-composable-solution">A composable solution!</h2>
+
+<p>After spending some time over this conundrum I came to the conclusion that a possible solution may look like this:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="syntax"><code><span class="k">class</span> <span class="nc">Entity</span>
+  <span class="n">delegated_type</span> <span class="ss">:entitable</span><span class="p">,</span> <span class="ss">types: </span><span class="sx">%w[ Business People ]</span>
+
+  <span class="n">delegate</span> <span class="ss">:identity</span><span class="p">,</span> <span class="ss">to: :entitable</span><span class="p">,</span> <span class="ss">private: </span><span class="kp">true</span>
+  <span class="n">delegate</span> <span class="ss">:number</span><span class="p">,</span> <span class="ss">to: :identity</span><span class="p">,</span> <span class="ss">prefix: :person_identity</span>
+<span class="k">end</span>
+
+<span class="k">class</span> <span class="nc">Person</span>
+  <span class="n">belongs_to</span> <span class="ss">:identity</span>
+<span class="k">end</span>
+
+<span class="k">class</span> <span class="nc">Business</span>
+  <span class="n">belongs_to</span> <span class="ss">:person</span>
+
+  <span class="n">delegate</span> <span class="ss">:identity</span><span class="p">,</span> <span class="ss">to: :person</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>Now you can obtain an identity number regardless of where it is coming from a person or from a person who a company belongs to.</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="syntax"><code><span class="o">&lt;</span><span class="sx">%= entity.person_identity_number %&gt;
+</span></code></pre></div></div>
+
+<p>Behind the scenes we delegated the association <code class="language-html highlighter-rouge">identity</code> from <code class="language-html highlighter-rouge">Entity</code> to <code class="language-html highlighter-rouge">:entitable</code> (Business or Person). If they do not handle it directly, they can pass delegate it again (as the <code class="language-html highlighter-rouge">Business</code> does delegate it to <code class="language-html highlighter-rouge">Person</code>).</p>
+
+<p>You can now implement multiple models that can <a href="https://en.wikipedia.org/wiki/Duck_test">cuack</a> as entitables if they either implement or delegate the <code class="language-html highlighter-rouge">identity</code> method.</p>
+
+<p>Now, it may or it may not make sense to use delegates. I guess it depends on the complexity of the models. On one side delegate make it simple to understand the methods that are delegated on the other side it may be simpler to simple define a method to perform the delegation. This is also equivalent:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="syntax"><code><span class="k">class</span> <span class="nc">Entity</span>
+  <span class="n">delegated_type</span> <span class="ss">:entitable</span><span class="p">,</span> <span class="ss">types: </span><span class="sx">%w[ Business People ]</span>
+
+  <span class="k">def</span> <span class="nf">person_identity_number</span>
+    <span class="n">entitable</span><span class="p">.</span><span class="nf">identity_number</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+
+<span class="k">class</span> <span class="nc">Person</span>
+  <span class="n">belongs_to</span> <span class="ss">:identity</span>
+
+  <span class="k">def</span> <span class="nf">identity_number</span>
+    <span class="n">identity</span><span class="p">.</span><span class="nf">number</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+
+<span class="k">class</span> <span class="nc">Business</span>
+  <span class="k">def</span> <span class="nf">identity_number</span> 
+    <span class="n">person</span><span class="p">.</span><span class="nf">identity_number</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div></div>
+
+<p>I found it interesting to explore object composition using delegate and multi-table-inheritance as this is an interesting pattern to help keep the code simpler and easier to read.</p>
+
+    </section>
+    <footer>
+    </footer>
+  </body>
+</html>
