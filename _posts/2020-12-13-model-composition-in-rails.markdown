@@ -112,7 +112,7 @@ However we quickly run into a problem: How to delegate this method down the line
 
 We are passing a method called `identity_number` to `Person` when it is already delegating the method as `number` with prefix `identity` (the prefix is removed when on the Identity model so the method simply becomes `identity.number`.
 
-## A compositionable solution!
+## A composable solution!
 
 After spending some time over this conundrum I came to the conclusion that a possible solution may look like this:
 
