@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.1.1">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2022-04-21T21:39:40+00:00</updated><id>/feed.xml</id><title type="html">Martin Caetano</title><subtitle>Startup maker</subtitle><entry><title type="html">Model Composition in Rails</title><link href="/model-composition-in-rails" rel="alternate" type="text/html" title="Model Composition in Rails" /><published>2020-12-13T05:56:33+00:00</published><updated>2020-12-13T05:56:33+00:00</updated><id>/model-composition-in-rails</id><content type="html" xml:base="/model-composition-in-rails">&lt;p&gt;I recently came with the need of treating two different models alike so as to be able to query them as one ActiveRelation and also trigger their methods using a unified interface even if they are internally differently from each other.&lt;/p&gt;
+
+&lt;p&gt;Let’s say we have &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;Business&lt;/code&gt; and &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;Person&lt;/code&gt; models, each of them has their own database table and I want a way to retrieve all businesses and people in one single query using &lt;em&gt;ActiveRecord&lt;/em&gt; and do it consistently returning an &lt;em&gt;ActiveRelation&lt;/em&gt; object.&lt;/p&gt;
+
+&lt;p&gt;We can reach this by introducing a new model namely &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;Entity&lt;/code&gt; that will take either a business or a person as an &lt;em&gt;entitable&lt;/em&gt; polymorphic association.&lt;/p&gt;
+
+&lt;h2 id=&quot;multi-table-inheritance-with-delegated-type&quot;&gt;Multi-table inheritance with delegated type&lt;/h2&gt;
+
+&lt;p&gt;I was lucky to find that Rails 6.1 introduced the concept of &lt;a href=&quot;https://edgeapi.rubyonrails.org/classes/ActiveRecord/DelegatedType.html&quot;&gt;delegated types&lt;/a&gt; the same day I needed to do this.&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;syntax&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Entity&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;delegated_type&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:entitable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;types: &lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;%w[ Business People ]&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;And on the &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;Business&lt;/code&gt; and &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;People&lt;/code&gt; models you add:&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;syntax&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Business&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;included&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;has_one&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:entity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;as: :entitable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;touch: &lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;true&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Now you can do the following:&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;syntax&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;# Create a business&lt;/span&gt;
+&lt;span class=&quot;no&quot;&gt;Entity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;create&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;entitable: &lt;/span&gt;&lt;span class=&quot;no&quot;&gt;Business&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;create&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;name: &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'Acme'&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;# Create a person&lt;/span&gt;
+&lt;span class=&quot;no&quot;&gt;Entity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;create&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;entitable: &lt;/span&gt;&lt;span class=&quot;no&quot;&gt;Person&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;create&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;name: &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'Martin'&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;And of course you can now retrieve both businesses and people together with &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;Entity.all&lt;/code&gt;. You can even create scopes for doing some filtering.&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;syntax&quot;&gt;&lt;code&gt;&lt;span class=&quot;no&quot;&gt;Entity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;all&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;businesses&lt;/span&gt;
+&lt;span class=&quot;no&quot;&gt;Entity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;all&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;people&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This is a nice addiction to Rails. It looks great and it helps maintain the code simple and easier to read.&lt;/p&gt;
+
+&lt;h2 id=&quot;delegating-methods-gets-messy-quickly&quot;&gt;Delegating methods gets messy quickly&lt;/h2&gt;
+
+&lt;p&gt;Now, let’s assume that every person has an associated &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;Identity&lt;/code&gt; model that returns their national identification number. We can easily delegate the method &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;number&lt;/code&gt; from  &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;Person&lt;/code&gt; to the &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;Identity&lt;/code&gt; association:&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;syntax&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Person&lt;/span&gt; 
+  &lt;span class=&quot;n&quot;&gt;belongs_to&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:identity&lt;/span&gt;
+
+  &lt;span class=&quot;n&quot;&gt;delegate&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:number&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;to: :identity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;prefix: &lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;true&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;We can call &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;person.identity_number&lt;/code&gt; to retrieve the identity number directly from the person object without passing through the identity object, honoring the &lt;a href=&quot;https://en.wikipedia.org/wiki/Law_of_Demeter&quot;&gt;Law of Demeter&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;The &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;prefix: true&lt;/code&gt; prefixes the method as &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;identity_number&lt;/code&gt; instead of &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;number&lt;/code&gt; as it is easier to understand that we’re calling the identity number: we want to avoid  &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;person.number&lt;/code&gt; because people don’t have numbers, they have identification numbers.&lt;/p&gt;
+
+&lt;p&gt;Now, let’s assume a business may belong to a person.&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;syntax&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Business&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;belongs_to&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:person&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;If we know that entities always have an identity either directly from a person or through a business’s owner we want to be able to call the identity from the entity with the same method regardless of the type of type of &lt;em&gt;entitable&lt;/em&gt; object.&lt;/p&gt;
+
+&lt;p&gt;From an entity we would want to be able do something like:&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;syntax&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;entity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;person_identity_number&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;4WA3X6E21T&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;To do this, we can attempt to add delegate method in the &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;Entity&lt;/code&gt; model so &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;Person&lt;/code&gt; and &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;Business&lt;/code&gt; will receive the delegated method &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;person_identity_number&lt;/code&gt; without its prefix as &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;identity_number&lt;/code&gt;. We can try now to re-delegate from the person to the identity and from the business to the person.&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;syntax&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Entity&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;# ...&lt;/span&gt;
+
+  &lt;span class=&quot;n&quot;&gt;delegate&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:identity_number&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;to: :entitable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;prefix: :person&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Person&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;# ...&lt;/span&gt;
+
+  &lt;span class=&quot;c1&quot;&gt;# Wrong! We already defined :number above.&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;delegate&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:identity_number&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;to: :identity&lt;/span&gt; 
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Business&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;# ...&lt;/span&gt;
+
+  &lt;span class=&quot;n&quot;&gt;delegate&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:identity_number&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;to: :person&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;However we quickly run into a problem: How to delegate this method down the line?&lt;/p&gt;
+
+&lt;p&gt;We are passing a method called &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;identity_number&lt;/code&gt; to &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;Person&lt;/code&gt; when it is already delegating the method as &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;number&lt;/code&gt; with prefix &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;identity&lt;/code&gt; (the prefix is removed when on the Identity model so the method simply becomes &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;identity.number&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;a-composable-solution&quot;&gt;A composable solution!&lt;/h2&gt;
+
+&lt;p&gt;After spending some time over this conundrum I came to the conclusion that a possible solution may look like this:&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;syntax&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Entity&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;delegated_type&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:entitable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;types: &lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;%w[ Business People ]&lt;/span&gt;
+
+  &lt;span class=&quot;n&quot;&gt;delegate&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:identity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;to: :entitable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;private: &lt;/span&gt;&lt;span class=&quot;kp&quot;&gt;true&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;delegate&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:number&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;to: :identity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;prefix: :person_identity&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Person&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;belongs_to&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:identity&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Business&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;belongs_to&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:person&lt;/span&gt;
+
+  &lt;span class=&quot;n&quot;&gt;delegate&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:identity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;to: :person&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Now you can obtain an identity number regardless of where it is coming from a person or from a person who a company belongs to.&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;syntax&quot;&gt;&lt;code&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;%= entity.person_identity_number %&amp;gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Behind the scenes we delegated the association &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;identity&lt;/code&gt; from &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;Entity&lt;/code&gt; to &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;:entitable&lt;/code&gt; (Business or Person). If they do not handle it directly, they can pass delegate it again (as the &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;Business&lt;/code&gt; does delegate it to &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;Person&lt;/code&gt;).&lt;/p&gt;
+
+&lt;p&gt;You can now implement multiple models that can &lt;a href=&quot;https://en.wikipedia.org/wiki/Duck_test&quot;&gt;cuack&lt;/a&gt; as entitables if they either implement or delegate the &lt;code class=&quot;language-html highlighter-rouge&quot;&gt;identity&lt;/code&gt; method.&lt;/p&gt;
+
+&lt;p&gt;Now, it may or it may not make sense to use delegates. I guess it depends on the complexity of the models. On one side delegate make it simple to understand the methods that are delegated on the other side it may be simpler to simple define a method to perform the delegation. This is also equivalent:&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;syntax&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Entity&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;delegated_type&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:entitable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;types: &lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;%w[ Business People ]&lt;/span&gt;
+
+  &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;person_identity_number&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;entitable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;identity_number&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Person&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;belongs_to&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:identity&lt;/span&gt;
+
+  &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;identity_number&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;identity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;number&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Business&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;identity_number&lt;/span&gt; 
+    &lt;span class=&quot;n&quot;&gt;person&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;identity_number&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I found it interesting to explore object composition using delegate and multi-table-inheritance as this is an interesting pattern to help keep the code simpler and easier to read.&lt;/p&gt;</content><author><name></name></author><category term="rails" /><summary type="html">I recently came with the need of treating two different models alike so as to be able to query them as one ActiveRelation and also trigger their methods using a unified interface even if they are internally differently from each other.</summary></entry></feed>

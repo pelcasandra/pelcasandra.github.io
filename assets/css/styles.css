@@ -1,0 +1,44 @@
+@import url(github.css);
+@font-face { font-family: 'Garamond Premiere Pro'; src: url("/assets/fonts/GaramondPremrPro.woff2") format("woff2"), url("/assets/fonts/GaramondPremrPro.woff") format("woff"); font-weight: normal; font-style: normal; font-display: swap; }
+
+@font-face { font-family: "GaramondPremrProIt"; src: url(/assets/fonts/GaramondPremrPro-ItDisp.eot); src: url(/assets/fonts/GaramondPremrPro-ItDisp.eot?#iefix) format("embedded-opentype"), url(/assets/fonts/GaramondPremrPro-ItDisp.woff) format("woff"), url(/assets/fonts/GaramondPremrPro-ItDisp.ttf) format("truetype"); font-weight: normal; font-style: normal; }
+
+@font-face { font-family: "NeuzeitSLTStdBookHeavy"; src: url(/assets./fonts/neuzeitsltstd-bookheavy.eot); src: url(/assets/fonts/neuzeitsltstd-bookheavy.eot?#iefix) format("embedded-opentype"), url(/assets/fonts/neuzeitsltstd-bookheavy.woff) format("woff"), url(/assets/fonts/neuzeitsltstd-bookheavy.ttf) format("truetype"); font-weight: normal; font-style: normal; }
+
+body { font-family: 'Garamond Premiere Pro', Georgia, 'Times New Roman', Times, serif; font-size: 20px; line-height: 1.5; -webkit-font-smoothing: antialiased; text-rendering: optimizelegibility; }
+
+body a { color: #0040FF; text-decoration: none; }
+
+body a:hover { color: #0000b3; }
+
+body nav { text-align: center; }
+
+body nav a { color: black; text-decoration: none; }
+
+body header h1 { text-align: center; margin: 70px 0 0; }
+
+body section { max-width: 700px; margin: 0 auto 100px; padding: 20px; }
+
+body section .main-page { text-align: center; max-width: 450px; margin: 0 auto; }
+
+body h1, body h2, body h3, body h4, body h5, body h6 { font-family: 'NeuzeitSLTStdBookHeavy'; text-transform: uppercase; font-weight: normal; }
+
+body h1 { font-size: 36px; }
+
+body h2 { margin-top: 50px; font-size: 24px; }
+
+body ul { list-style: none; margin: 0; padding: 0; }
+
+body ul li { vertical-align: middle; }
+
+body .avatar { margin-top: 1rem; }
+
+body pre { background: #f6f8fa; padding: 20px; border-radius: 8px; font-size: 15px; margin: 30px 0; overflow: scroll; }
+
+body code.highlighter-rouge { font-size: 14px; background: rgba(27, 31, 35, 0.05); padding: .2em .4em; border-radius: 6px; }
+
+body .startups { display: flex; justify-content: center; align-items: center; }
+
+body .startups li { display: inline; padding: 0 20px; }
+
+/*# sourceMappingURL=styles.css.map */
